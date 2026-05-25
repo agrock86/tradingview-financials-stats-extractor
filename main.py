@@ -362,7 +362,7 @@ df["ranking_score"] = (
     + (df["de_ratio_score"] * 0.10)
     + (df["buyback_score"] * 0.10)
 )
-df["has_complete_data"] = df.isna().any(axis=1)
+df["has_incomplete_data"] = df.isna().any(axis=1)
 
 df_ranking = df.sort_values(by="ranking_score", ascending=False)
 df_ranking.to_csv("stock_ranking.csv", index=False)
