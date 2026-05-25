@@ -1,0 +1,58 @@
+ticker,company,industry,country,exchange
+AAPL,Apple Inc,Consumer Electronics,USA,NASDAQ
+ADI,Analog Devices Inc,Semiconductors,USA,NASDAQ
+AMAT,Applied Materials Inc,Semiconductor Equipment & Materials,USA,NASDAQ
+AMD,Advanced Micro Devices Inc,Semiconductors,USA,NASDAQ
+AMZN,Amazon.com Inc,Internet Retail,USA,NASDAQ
+ARM,Arm Holdings Plc ADR,Semiconductors,United Kingdom,NASDAQ
+ASML,ASML Holding NV,Semiconductor Equipment & Materials,Netherlands,NASDAQ
+AVGO,Broadcom Inc,Semiconductors,USA,NASDAQ
+COST,Costco Wholesale Corp,Discount Stores,USA,NASDAQ
+CSCO,Cisco Systems Inc,Communication Equipment,USA,NASDAQ
+GOOG,Alphabet Inc,Internet Content & Information,USA,NASDAQ
+GOOGL,Alphabet Inc,Internet Content & Information,USA,NASDAQ
+INTC,Intel Corp,Semiconductors,USA,NASDAQ
+KLAC,KLA Corp,Semiconductor Equipment & Materials,USA,NASDAQ
+LIN,Linde Plc,Specialty Chemicals,United Kingdom,NASDAQ
+LRCX,Lam Research Corp,Semiconductor Equipment & Materials,USA,NASDAQ
+META,Meta Platforms Inc,Internet Content & Information,USA,NASDAQ
+MSFT,Microsoft Corp,Software - Infrastructure,USA,NASDAQ
+MU,Micron Technology Inc,Semiconductors,USA,NASDAQ
+NFLX,Netflix Inc,Entertainment,USA,NASDAQ
+NVDA,NVIDIA Corp,Semiconductors,USA,NASDAQ
+PANW,Palo Alto Networks Inc,Software - Infrastructure,USA,NASDAQ
+PEP,PepsiCo Inc,Beverages - Non-Alcoholic,USA,NASDAQ
+PLTR,Palantir Technologies Inc,Software - Infrastructure,USA,NASDAQ
+QCOM,Qualcomm Inc,Semiconductors,USA,NASDAQ
+TMUS,T-Mobile US Inc,Telecom Services,USA,NASDAQ
+TSLA,Tesla Inc,Auto Manufacturers,USA,NASDAQ
+TXN,Texas Instruments Inc,Semiconductors,USA,NASDAQ
+WMT,Walmart Inc,Discount Stores,USA,NASDAQ
+ABBV,Abbvie Inc,Drug Manufacturers - General,USA,NYSE
+AXP,American Express Co,Credit Services,USA,NYSE
+BAC,Bank Of America Corp,Banks - Diversified,USA,NYSE
+BRK.B,Berkshire Hathaway Inc,Insurance - Diversified,USA,NYSE
+C,Citigroup Inc,Banks - Diversified,USA,NYSE
+CAT,Caterpillar Inc,Farm & Heavy Construction Machinery,USA,NYSE
+CVX,Chevron Corp,Oil & Gas Integrated,USA,NYSE
+GE,GE Aerospace,Aerospace & Defense,USA,NYSE
+GEV,GE Vernova Inc,Specialty Industrial Machinery,USA,NYSE
+GS,Goldman Sachs Group Inc,Capital Markets,USA,NYSE
+HD,Home Depot Inc,Home Improvement Retail,USA,NYSE
+IBM,International Business Machines Corp,Information Technology Services,USA,NYSE
+JNJ,Johnson & Johnson,Drug Manufacturers - General,USA,NYSE
+JPM,JPMorgan Chase & Co,Banks - Diversified,USA,NYSE
+KO,Coca-Cola Co,Beverages - Non-Alcoholic,USA,NYSE
+LLY,Lilly(Eli) & Co,Drug Manufacturers - General,USA,NYSE
+MA,Mastercard Incorporated,Credit Services,USA,NYSE
+MCD,McDonald's Corp,Restaurants,USA,NYSE
+MRK,Merck & Co Inc,Drug Manufacturers - General,USA,NYSE
+MS,Morgan Stanley,Capital Markets,USA,NYSE
+ORCL,Oracle Corp,Software - Infrastructure,USA,NYSE
+PG,Procter & Gamble Co,Household & Personal Products,USA,NYSE
+PM,Philip Morris International Inc,Tobacco,USA,NYSE
+RTX,RTX Corp,Aerospace & Defense,USA,NYSE
+UNH,Unitedhealth Group Inc,Healthcare Plans,USA,NYSE
+V,Visa Inc,Credit Services,USA,NYSE
+WFC,Wells Fargo & Co,Banks - Diversified,USA,NYSE
+XOM,Exxon Mobil Corp,Oil & Gas Integrated,USA,NYSE

@@ -1,0 +1,82 @@
+# Top Level Configuration
+include = [
+    "pyproject.toml",
+    "*.py",
+]
+exclude = [
+    "src/product_ave/pipeline/finetune/finetune_ave_model_llama.py",
+    "src/product_ave/inference/product_inference_helper_llama.py",
+]
+target-version = "py312"
+line-length = 120
+indent-width = 4
+
+[format]
+preview = true
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+[lint]
+preview = true
+extend-select = [
+    "A",    # flake8-builtins
+    "ANN",  # flake8-annotations
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "D",    # pydocstyle
+    # "DOC",  # pydoclint [sphinx is not supported yet]
+    "E",    # pycodestyle Error (Subset is part of Ruff default)
+    "ERA",  # flake8-eradicate/eradicate
+    "F",    # Pyflakes (Ruff default)
+    "G",    # flake8-logging-format
+    "I",    # isort
+    "ISC",  # flake8-implicit-str-concat-isc
+    "ICN",  # flake8-import-conventions
+    "LOG",  # flake8-logging
+    "N",    # pep8-naming
+    "PERF", # Perflint
+    "PIE",  # flake8-pie
+    "PGH",  # pygrep
+    "PT",   # flake8-pytest-style
+    "PTH",  # flake8-use-pathlib
+    "Q",    # flake8-quotes
+    "RUF",  # ruff checks
+    "S",    # flake8-bandit
+    "SIM",  # flake8-simplify
+    "TD",   # flake8-todos
+    "T20",  # flake8-print
+    "TID",  # flake8-tidy-imports
+    "TRY",  # tryceratops
+    "UP",   # pyupgrade
+]
+ignore = [
+    "B006", # do not use mutable data structures for argument defaults
+    "B904", # use 'raise ... from err'
+    "D203", # one-blank-line-before-class
+    "D212", # multi-line-summary-first-line
+    "E114", # indentation-with-invalid-multiple-comment
+    "E117", # over-indented
+    "G004", # Logging statement uses f-string
+    "N818", # Exception name should be named with an Error suffix
+    "TRY003", # Avoid specifying long messages outside the exception class
+]
+fixable = ["ALL"]
+extend-safe-fixes = ["E501"]
+unfixable = [
+    "ERA", # Do not auto remove commented out code
+]
+
+[lint.per-file-ignores]
+"__init__.py" = ["D104"]
+"*.ipynb" = ["F821", "T201"]
+"*_test.py" = ["S101"]
+
+[lint.pydocstyle]
+convention = "pep257"
+
+[lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[lint.isort]
+lines-between-types = 1
+lines-after-imports = 2

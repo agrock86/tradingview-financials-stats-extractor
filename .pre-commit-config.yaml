@@ -1,0 +1,37 @@
+default_language_version:
+  python: python3.12
+default_stages: [pre-commit, pre-push, manual]
+fail_fast: true
+exclude: '^$'
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: detect-private-key
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-json
+        exclude: data/product_data_25k.json
+      - id: check-toml
+      - id: check-yaml
+      - id: pretty-format-json
+        args: [--autofix, --no-ensure-ascii, --no-sort-keys]
+        exclude: data/product_data_25k.json
+      - id: check-ast
+      - id: check-builtin-literals
+      - id: debug-statements
+      - id: check-docstring-first
+      - id: name-tests-test
+  - repo: https://github.com/pre-commit/pre-commit
+    rev: v4.0.1
+    hooks:
+      - id: validate_manifest
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.10
+    hooks:
+      - id: ruff-check
+        args: [--fix, --config=./ruff.toml]
+      - id: ruff-format
+        args: [--config=./ruff.toml]
