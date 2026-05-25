@@ -53,8 +53,10 @@ def get_stock_universe() -> list[dict]:
 
         for stock_index_code, stock_index_name in stock_indexes.items():
             for page_index in range(3):
-                stock_list_url = f"https://finviz.com/screener?v=111&f=cap_mega,{stock_index_code}"
-                f"&r={20 * page_index + 1}"
+                stock_list_url = (
+                    f"https://finviz.com/screener?v=111&f=cap_mega,{stock_index_code}"
+                    f"&r={20 * page_index + 1}"
+                )
 
                 driver.get(stock_list_url)
                 soup = BeautifulSoup(driver.page_source, "html.parser")
@@ -108,8 +110,10 @@ def get_finantial_stats(stock_list: list) -> list[dict]:
         stock_stats = {}
         stock_stats["ticker"] = stock["ticker"]
 
-        stock_stats_url = f"https://www.tradingview.com/symbols/{stock['exchange']}-{stock['ticker']}"
-        "/financials-statistics-and-ratios/"
+        stock_stats_url = (
+            f"https://www.tradingview.com/symbols/{stock['exchange']}-{stock['ticker']}"
+            "/financials-statistics-and-ratios/"
+        )
 
         with build_driver() as driver:
             driver.get(stock_stats_url)
@@ -213,8 +217,10 @@ def get_finantial_earnings(stock_list: list) -> list:
         stock_stats = {}
         stock_stats["ticker"] = stock["ticker"]
 
-        stock_stats_url = f"https://www.tradingview.com/symbols/{stock['exchange']}-{stock['ticker']}"
-        "/financials-earnings/?earnings-period=FY&revenues-period=FY"
+        stock_stats_url = (
+            f"https://www.tradingview.com/symbols/{stock['exchange']}-{stock['ticker']}"
+            "/financials-earnings/?earnings-period=FY&revenues-period=FY"
+        )
 
         with build_driver() as driver:
             driver.get(stock_stats_url)
