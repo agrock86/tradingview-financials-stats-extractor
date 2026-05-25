@@ -56,7 +56,7 @@ def get_stock_list():
                     
                     if not any(stock["ticker"] == ticker for stock in stock_universe):
                         stock_universe.append({
-                            "ticker": ticker,
+                            "ticker": ticker.replace("-", "."),
                             "company": company,
                             "industry": industry,
                             "country": country,
@@ -81,7 +81,9 @@ def get_finantial_stats(stock_list: list) -> list:
     
     all_stats = []
 
-    for stock in stock_list[:1]:
+    for stock in stock_list:
+        print(f"Processing stock: {stock["ticker"]}" )
+
         stock_stats = {}
         stock_stats["ticker"] = stock["ticker"]
 
@@ -107,8 +109,11 @@ def get_finantial_stats(stock_list: list) -> list:
                     stat_value = re.sub(r"[^\d.-]", "", stat_text.text)
                     
                     if stat_value:
-                        stat_values.append(float(stat_value))
-                
+                        stat_value = float(stat_value)
+                        if stat_key in ("roic", "operating_margin"):
+                            stat_value = stat_value / 100
+                        stat_values.append(stat_value)
+                stat_values = stat_values[:-1]
                 for i, stat_value in enumerate(stat_values):
                     stock_stats[f"{stat_key}_{len(stat_values) - i}"] = stat_value
             
@@ -122,7 +127,7 @@ def get_finantial_income_statement(stock_list: list) -> list:
 
     all_stats = []
 
-    for stock in stock_list[:1]:
+    for stock in stock_list:
         stock_stats = {}
         stock_stats["ticker"] = stock["ticker"]
         
@@ -145,7 +150,7 @@ def get_finantial_income_statement(stock_list: list) -> list:
                     
                     if stat_value:
                         stat_values.append(float(stat_value))
-                
+                stat_values = stat_values[:-1]
                 for i, stat_value in enumerate(stat_values):
                     stock_stats[f"{stat_key}_{len(stat_values) - i}"] = stat_value
             
@@ -160,7 +165,7 @@ def get_finantial_earnings(stock_list: list) -> list:
 
     all_stats = []
 
-    for stock in stock_list[:1]:
+    for stock in stock_list:
         stock_stats = {}
         stock_stats["ticker"] = stock["ticker"]
         
@@ -209,15 +214,17 @@ df = pd.merge(df, df_finantial_earnings, on="ticker")
 # PE Ratio
 # --------------
 # Score centered on mean.
-df["pe_ratio_score"] = df["pe_ratio_1"] / df.filter(like="pe_ratio_").mean(axis=1) - 1
+pe_ratio_cols = [f"pe_ratio_{i}" for i in range(1, 6) if f"pe_ratio_{i}" in df.columns]
+df["pe_ratio_score"] = 1 - (df["pe_ratio_1"] / df[pe_ratio_cols].mean(axis=1))
 
 # --------------
 # FCF/share
 # --------------
-df["fcf_share_cagr"] = np.where(df["fcf_share_5"] > 0, (df["fcf_share_1"] / df["fcf_share_5"]) ** (1 / 5) - 1, np.nan)
-df["eps_cagr"] = np.where(df["eps_5"] > 0, (df["eps_1"] / df["eps_5"]) ** (1 / 5) - 1, np.nan)
+df["fcf_share_cagr"] = np.where((df["fcf_share_1"] > 0) & (df["fcf_share_5"] > 0), (df["fcf_share_1"] / df["fcf_share_5"]) ** (1 / 4) - 1, np.nan)
+df["eps_cagr"] = np.where((df["eps_1"] > 0) & (df["eps_5"] > 0), (df["eps_1"] / df["eps_5"]) ** (1 / 4) - 1, np.nan)
 # Relative growth velocity (rgv) of FCF per share in relation to EPS.
-df["fcf_share_rgw"] = df["fcf_share_cagr"] / df["eps_cagr"]
+df["fcf_share_rgw"] = np.where(df["eps_cagr"] > 0, df["fcf_share_cagr"] / df["eps_cagr"], np.where(df["fcf_share_cagr"] > 0, 1.2, 0.0))
+df["fcf_share_rgw"] = df["fcf_share_rgw"].clip(lower=0.0, upper=1.2)
 # FCF per share growth consistency.
 df["fcf_share_trend"] = (
     (df["fcf_share_4"] > df["fcf_share_5"]) +
@@ -227,13 +234,14 @@ df["fcf_share_trend"] = (
 ) / 4
 # Use 10% as target yield to normailize.
 df["fcf_yield"] = (df["fcf_share_1"] / df["last_price"]) / 0.1
+df["fcf_yield"] = df["fcf_yield"].clip(lower=0.0, upper=1.5)
 df["fcf_share_score"] = df["fcf_share_trend"] * df["fcf_share_rgw"] * df["fcf_yield"]
 
 # --------------
 # Total revenue
 # --------------
 df["total_revenue_cagr"] = np.where(
-    df["total_revenue_5"] > 0, (df["total_revenue_1"] / df["total_revenue_5"]) ** (1 / 5) - 1, np.nan
+    (df["total_revenue_1"] > 0) & (df["total_revenue_5"] > 0), (df["total_revenue_1"] / df["total_revenue_5"]) ** (1 / 4) - 1, np.nan
 )
 df["total_revenue_trend"] = (
     (df["total_revenue_4"] > df["total_revenue_5"]) +
@@ -241,12 +249,12 @@ df["total_revenue_trend"] = (
     (df["total_revenue_2"] > df["total_revenue_3"]) +
     (df["total_revenue_1"] > df["total_revenue_2"])
 ) / 4
-df["total_revenue_score"] = df["total_revenue_trend"] * df["total_revenue_cagr"]
+df["total_revenue_score"] = df["total_revenue_trend"] * df["total_revenue_cagr"].rank(pct=True)
 
 # --------------
 # Operating margin
 # --------------
-df["operating_margin_strength"] = df["operating_margin_1"] / 0.25
+df["operating_margin_strength"] = (df["operating_margin_1"] / 0.25).clip(lower=0.0, upper=1.0)
 df["operating_margin_trend"] = (
     (df["operating_margin_4"] >= df["operating_margin_5"] * 0.98) +
     (df["operating_margin_3"] >= df["operating_margin_4"] * 0.98) +
@@ -258,7 +266,7 @@ df["operating_margin_score"] = df["operating_margin_trend"] * df["operating_marg
 # --------------
 # ROIC
 # --------------
-df["roic_strength"] = df["roic_1"] / 0.25
+df["roic_strength"] = (df["roic_1"] / 0.25).clip(lower=0.0, upper=1.0)
 df["roic_trend"] = (
     (df["roic_4"] >= df["roic_5"] * 0.98) +
     (df["roic_3"] >= df["roic_4"] * 0.98) +
@@ -267,10 +275,40 @@ df["roic_trend"] = (
 ) / 4
 df["roic_score"] = df["roic_trend"] * df["roic_strength"]
 
+# --------------
+# Debt to equity
+# --------------
+df["de_ratio_score"] = 1 / (1 + df["de_ratio_1"])
+
+# --------------
+# Buyback yield
+# --------------
+df["buyback_yield"] = ((df["shares_outstanding_2"] - df["shares_outstanding_1"]) / df["shares_outstanding_2"] / 0.02).clip(lower=0.0, upper=1.0)
+df["buyback_trend"] = (
+    (df["shares_outstanding_4"] < df["shares_outstanding_5"]) +
+    (df["shares_outstanding_3"] < df["shares_outstanding_4"]) +
+    (df["shares_outstanding_2"] < df["shares_outstanding_3"]) +
+    (df["shares_outstanding_1"] < df["shares_outstanding_2"])
+) / 4
+df["buyback_score"] = df["buyback_trend"] * df["buyback_yield"]
+
+df["ranking_score"] = (
+    (df["pe_ratio_score"]         * 0.10) +
+    (df["fcf_share_score"]        * 0.15) +
+    (df["total_revenue_score"]    * 0.15) +
+    (df["operating_margin_score"] * 0.15) +
+    (df["roic_score"]             * 0.25) +
+    (df["de_ratio_score"]         * 0.10) +
+    (df["buyback_score"]          * 0.10)
+)
+df_ranking = df.sort_values(by="ranking_score", ascending=False)
+df_ranking.to_csv("stock_ranking.csv", index=False)
 
 # print(df[["fcf_share_1", "fcf_share_5"]])
 # print(df[["eps_1", "eps_5"]])
 # print(df[["fcf_share_cagr", "eps_cagr", "fcf_share_rgw", "fcf_share_trend", "fcf_share_score"]])
+
+print(df.columns)
 
 
 
