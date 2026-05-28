@@ -2,6 +2,7 @@
 
 import logging
 import re
+import time
 
 from pathlib import Path
 
@@ -11,6 +12,8 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from selenium.webdriver import Chrome
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 logger = logging.getLogger(__name__)
@@ -18,8 +21,10 @@ logger = logging.getLogger(__name__)
 chrome_options = Options()
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
+chrome_options.page_load_strategy = "normal"
 
-stock_indexes = {"idx_ndx": "NASDAQ 100", "idx_sp500": "S&P 500"}
+STOCK_INDEXES = {"idx_ndx": "NASDAQ 100", "idx_sp500": "S&P 500"}
+LOAD_WAIT_TIME = 3
 
 
 def build_driver() -> Chrome:
@@ -33,6 +38,27 @@ def build_driver() -> Chrome:
     driver.set_script_timeout(500)
 
     return driver
+
+
+def wait_for_data_element(selector: str, timeout: int = 15) -> bool:
+    """Wait until the given CSS selector element exists and has non-empty text.
+
+    :param selector: CSS selector.
+    :type selector: str
+    :param timeout: Max time to wait for the element.
+    :type timeout: int
+    :return: True if the element was found and has non-empty text. False otherwise.
+    :rtype: bool
+    """
+    """"""
+    try:
+        WebDriverWait(driver, timeout).until(lambda d: len(d.find_element(By.CSS_SELECTOR, selector).text.strip()) > 0)
+    except Exception:
+        logger.exception("Data element not found")
+    else:
+        return True
+
+    return False
 
 
 def get_stock_universe() -> list[dict]:
@@ -51,11 +77,10 @@ def get_stock_universe() -> list[dict]:
 
             return stock_universe
 
-        for stock_index_code, stock_index_name in stock_indexes.items():
+        for stock_index_code, stock_index_name in STOCK_INDEXES.items():
             for page_index in range(3):
                 stock_list_url = (
-                    f"https://finviz.com/screener?v=111&f=cap_mega,{stock_index_code}"
-                    f"&r={20 * page_index + 1}"
+                    f"https://finviz.com/screener?v=111&f=cap_mega,{stock_index_code}&r={20 * page_index + 1}"
                 )
 
                 driver.get(stock_list_url)
@@ -114,38 +139,36 @@ def get_finantial_stats(stock_list: list) -> list[dict]:
             f"https://www.tradingview.com/symbols/{stock['exchange']}-{stock['ticker']}"
             "/financials-statistics-and-ratios/"
         )
+        driver.get(stock_stats_url)
 
-        with build_driver() as driver:
-            driver.get(stock_stats_url)
-            soup = BeautifulSoup(driver.page_source, "html.parser")
+        # Wait for first stat to load.
+        time.sleep(LOAD_WAIT_TIME)
+        wait_for_data_element(selector=f'div[data-name="{target_stats["pe_ratio"]}"]')
 
-            last_price = soup.select_one('span[data-qa-id="symbol-last-value"] span')
-            last_price = re.sub(r"[^\d.-]", "", last_price.text)
-            if last_price:
-                stock_stats["last_price"] = float(last_price)
+        soup = BeautifulSoup(driver.page_source, "html.parser")
 
-            for stat_key, stat_name in target_stats.items():
-                stats_list = (
-                    soup
-                    .select_one(f'div[data-name="{stat_name}"]')
-                    .select_one('div[class*="values-"]')
-                    .select('div[class*="value-"]')
-                )
+        for stat_key, stat_name in target_stats.items():
+            stats_list = (
+                soup
+                .select_one(f'div[data-name="{stat_name}"]')
+                .select_one('div[class*="values-"]')
+                .select('div[class*="value-"]')
+            )
 
-                stat_values = []
-                for stat_text in stats_list:
-                    stat_value = re.sub(r"[^\d.-]", "", stat_text.text)
+            stat_values = []
+            for stat_text in stats_list:
+                stat_value = re.sub(r"[^\d.-]", "", stat_text.text)
 
-                    if stat_value:
-                        stat_value = float(stat_value)
-                        if stat_key in ("roic", "operating_margin"):
-                            stat_value = stat_value / 100
-                        stat_values.append(stat_value)
-                stat_values = stat_values[:-1]
-                for i, stat_value in enumerate(stat_values):
-                    stock_stats[f"{stat_key}_{len(stat_values) - i}"] = stat_value
+                if stat_value:
+                    stat_value = float(stat_value)
+                    if stat_key in ("roic", "operating_margin"):
+                        stat_value = stat_value / 100
+                    stat_values.append(stat_value)
+            stat_values = stat_values[:-1]
+            for i, stat_value in enumerate(stat_values):
+                stock_stats[f"{stat_key}_{len(stat_values) - i}"] = stat_value
 
-            all_stats.append(stock_stats)
+        all_stats.append(stock_stats)
 
     return all_stats
 
@@ -171,30 +194,33 @@ def get_finantial_income_statement(stock_list: list) -> list[dict]:
         stock_stats_url = (
             f"https://www.tradingview.com/symbols/{stock['exchange']}-{stock['ticker']}/financials-income-statement/"
         )
+        driver.get(stock_stats_url)
 
-        with build_driver() as driver:
-            driver.get(stock_stats_url)
-            soup = BeautifulSoup(driver.page_source, "html.parser")
+        # Wait for first stat to load.
+        time.sleep(LOAD_WAIT_TIME)
+        wait_for_data_element(selector=f'div[data-name="{target_stats["total_revenue"]}"]')
 
-            for stat_key, stat_name in target_stats.items():
-                stats_list = (
-                    soup
-                    .select_one(f'div[data-name="{stat_name}"]')
-                    .select_one('div[class*="values-"]')
-                    .select('div[class*="value-"]')
-                )
+        soup = BeautifulSoup(driver.page_source, "html.parser")
 
-                stat_values = []
-                for stat_text in stats_list:
-                    stat_value = re.sub(r"[^\d.-]", "", stat_text.text)
+        for stat_key, stat_name in target_stats.items():
+            stats_list = (
+                soup
+                .select_one(f'div[data-name="{stat_name}"]')
+                .select_one('div[class*="values-"]')
+                .select('div[class*="value-"]')
+            )
 
-                    if stat_value:
-                        stat_values.append(float(stat_value))
-                stat_values = stat_values[:-1]
-                for i, stat_value in enumerate(stat_values):
-                    stock_stats[f"{stat_key}_{len(stat_values) - i}"] = stat_value
+            stat_values = []
+            for stat_text in stats_list:
+                stat_value = re.sub(r"[^\d.-]", "", stat_text.text)
 
-            all_stats.append(stock_stats)
+                if stat_value:
+                    stat_values.append(float(stat_value))
+            stat_values = stat_values[:-1]
+            for i, stat_value in enumerate(stat_values):
+                stock_stats[f"{stat_key}_{len(stat_values) - i}"] = stat_value
+
+        all_stats.append(stock_stats)
 
     return all_stats
 
@@ -221,33 +247,38 @@ def get_finantial_earnings(stock_list: list) -> list:
             f"https://www.tradingview.com/symbols/{stock['exchange']}-{stock['ticker']}"
             "/financials-earnings/?earnings-period=FY&revenues-period=FY"
         )
+        driver.get(stock_stats_url)
 
-        with build_driver() as driver:
-            driver.get(stock_stats_url)
-            soup = BeautifulSoup(driver.page_source, "html.parser")
+        # Wait for first stat to load.
+        time.sleep(LOAD_WAIT_TIME)
+        wait_for_data_element(selector=f'div[data-name="{target_stats["eps"]}"]')
 
-            for stat_key, stat_name in target_stats.items():
-                stats_list = (
-                    soup
-                    .select_one(f'div[data-name="{stat_name}"]')
-                    .select_one('div[class*="values-"]')
-                    .select('div[class*="value-"]')
-                )
+        soup = BeautifulSoup(driver.page_source, "html.parser")
 
-                stat_values = []
-                for stat_text in stats_list:
-                    stat_value = re.sub(r"[^\d.-]", "", stat_text.text)
+        for stat_key, stat_name in target_stats.items():
+            stats_list = (
+                soup
+                .select_one(f'div[data-name="{stat_name}"]')
+                .select_one('div[class*="values-"]')
+                .select('div[class*="value-"]')
+            )
 
-                    if stat_value:
-                        stat_values.append(float(stat_value))
+            stat_values = []
+            for stat_text in stats_list:
+                stat_value = re.sub(r"[^\d.-]", "", stat_text.text)
 
-                for i, stat_value in enumerate(stat_values):
-                    stock_stats[f"{stat_key}_{len(stat_values) - i}"] = stat_value
+                if stat_value:
+                    stat_values.append(float(stat_value))
 
-            all_stats.append(stock_stats)
+            for i, stat_value in enumerate(stat_values):
+                stock_stats[f"{stat_key}_{len(stat_values) - i}"] = stat_value
+
+        all_stats.append(stock_stats)
 
     return all_stats
 
+
+driver = build_driver()
 
 stock_list = get_stock_universe()
 finantial_stats = get_finantial_stats(stock_list)
@@ -268,7 +299,7 @@ df = pd.merge(df, df_finantial_earnings, on="ticker")
 # --------------
 # Score centered on mean.
 pe_ratio_cols = [f"pe_ratio_{i}" for i in range(1, 6) if f"pe_ratio_{i}" in df.columns]
-df["pe_ratio_score"] = 1 - (df["pe_ratio_1"] / df[pe_ratio_cols].mean(axis=1))
+df["pe_ratio_score"] = 1 - (df["pe_ratio_1"] / df[pe_ratio_cols].median(axis=1))
 
 # --------------
 # FCF/share
@@ -277,7 +308,7 @@ df["fcf_share_cagr"] = np.where(
     (df["fcf_share_1"] > 0) & (df["fcf_share_5"] > 0), (df["fcf_share_1"] / df["fcf_share_5"]) ** (1 / 4) - 1, np.nan
 )
 df["eps_cagr"] = np.where((df["eps_1"] > 0) & (df["eps_5"] > 0), (df["eps_1"] / df["eps_5"]) ** (1 / 4) - 1, np.nan)
-# Relative growth velocity (rgv) of FCF per share in relation to EPS.
+# Relative growth velocity (rgv) of FCF per shar in relation to EPS.
 df["fcf_share_rgw"] = np.where(
     df["eps_cagr"] > 0, df["fcf_share_cagr"] / df["eps_cagr"], np.where(df["fcf_share_cagr"] > 0, 1.2, 0.0)
 )
@@ -290,7 +321,7 @@ df["fcf_share_trend"] = (
     + (df["fcf_share_1"] > df["fcf_share_2"])
 ) / 4
 # Use 10% as target yield to normailize.
-df["fcf_yield"] = (df["fcf_share_1"] / df["last_price"]) / 0.1
+df["fcf_yield"] = (df["fcf_share_1"] / (df["pe_ratio_1"] * df["eps_1"])) / 0.1
 df["fcf_yield"] = df["fcf_yield"].clip(lower=0.0, upper=1.5)
 df["fcf_share_score"] = df["fcf_share_trend"] * df["fcf_share_rgw"] * df["fcf_yield"]
 
@@ -363,6 +394,7 @@ df["ranking_score"] = (
     + (df["buyback_score"] * 0.10)
 )
 df["has_incomplete_data"] = df.isna().any(axis=1)
+df = df.round(4)
 
 df_ranking = df.sort_values(by="ranking_score", ascending=False)
 df_ranking.to_csv("stock_ranking.csv", index=False)
